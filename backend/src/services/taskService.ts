@@ -1,27 +1,29 @@
 import { prisma } from '../utils/prisma';
 
-enum Status {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-}
-
 type StatusType = 'PENDING' | 'COMPLETED';
+type PriorityType = 'LOW' | 'NORMAL' | 'HIGH';
 
 interface CreateTaskInput {
   title: string;
   description?: string;
   status?: StatusType;
+  priority?: PriorityType;
+  projectId: string;
   creatorId: string;
   assigneeId?: string;
   pendingAssigneeEmail?: string;
+  dueDate?: Date;
 }
 
 interface UpdateTaskInput {
   title?: string;
   description?: string;
   status?: StatusType;
+  priority?: PriorityType;
+  progress?: number;
   assigneeId?: string;
   pendingAssigneeEmail?: string;
+  dueDate?: Date;
 }
 
 export class TaskService {
@@ -31,12 +33,22 @@ export class TaskService {
       data: {
         title: data.title,
         description: data.description,
-        status: data.status || Status.PENDING,
+        status: data.status || 'PENDING',
+        priority: data.priority || 'NORMAL',
+        projectId: data.projectId,
         creatorId: data.creatorId,
         assigneeId: data.assigneeId,
         pendingAssigneeEmail: data.pendingAssigneeEmail,
+        dueDate: data.dueDate,
       },
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
         creator: {
           select: {
             id: true,
@@ -80,6 +92,13 @@ export class TaskService {
     return await prisma.task.findMany({
       where,
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
         creator: {
           select: {
             id: true,
@@ -108,6 +127,13 @@ export class TaskService {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
         creator: {
           select: {
             id: true,
@@ -147,25 +173,52 @@ export class TaskService {
 
   // Update a task
   async updateTask(taskId: string, userId: string, data: UpdateTaskInput) {
-    // Check if user is the creator
+    // Check if user is the creator or assignee
     const task = await prisma.task.findUnique({
       where: { id: taskId },
     });
 
-    if (!task || task.creatorId !== userId) {
+    if (!task) {
       return null;
+    }
+
+    // Creators can update everything, assignees can only update status and progress
+    const isCreator = task.creatorId === userId;
+    const isAssignee = task.assigneeId === userId;
+
+    if (!isCreator && !isAssignee) {
+      return null;
+    }
+
+    // If user is assignee (not creator), only allow status and progress updates
+    const updateData: any = {};
+    if (isCreator) {
+      // Creator can update all fields
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.priority !== undefined) updateData.priority = data.priority;
+      if (data.progress !== undefined) updateData.progress = data.progress;
+      if (data.assigneeId !== undefined) updateData.assigneeId = data.assigneeId;
+      if (data.pendingAssigneeEmail !== undefined) updateData.pendingAssigneeEmail = data.pendingAssigneeEmail;
+      if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+    } else if (isAssignee) {
+      // Assignee can only update status and progress
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.progress !== undefined) updateData.progress = data.progress;
     }
 
     return await prisma.task.update({
       where: { id: taskId },
-      data: {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        assigneeId: data.assigneeId,
-        pendingAssigneeEmail: data.pendingAssigneeEmail,
-      },
+      data: updateData,
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
         creator: {
           select: {
             id: true,

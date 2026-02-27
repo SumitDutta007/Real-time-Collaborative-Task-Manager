@@ -9,7 +9,7 @@ enum Status {
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, status, assigneeEmail, assigneeId } = req.body;
+    const { title, description, status, assigneeEmail, assigneeId, projectId, priority, dueDate } = req.body;
     const creatorId = req.user?.id;
 
     if (!creatorId) {
@@ -26,13 +26,23 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    if (!projectId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Project ID is required',
+      });
+    }
+
     const task = await taskService.createTask({
       title,
       description,
       status: status as 'PENDING' | 'COMPLETED',
+      priority: priority as 'LOW' | 'NORMAL' | 'HIGH',
+      projectId,
       creatorId,
       assigneeId,
       pendingAssigneeEmail: assigneeEmail,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 
     return res.status(201).json({
@@ -114,7 +124,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
-    const { title, description, status, assigneeId, assigneeEmail } = req.body;
+    const { title, description, status, priority, progress, assigneeId, assigneeEmail, dueDate } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -127,8 +137,11 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       title,
       description,
       status: status as 'PENDING' | 'COMPLETED',
+      priority: priority as 'LOW' | 'NORMAL' | 'HIGH',
+      progress,
       assigneeId,
       pendingAssigneeEmail: assigneeEmail,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
     });
 
     if (!task) {

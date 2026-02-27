@@ -8,6 +8,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import authRoutes from './routes/authRoutes';
 import taskRoutes from './routes/taskRoutes';
+import projectRoutes from './routes/projectRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -53,6 +54,9 @@ app.get('/api', (_req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Project routes
+app.use('/api/projects', projectRoutes);
 
 // Task routes
 app.use('/api/tasks', taskRoutes);

@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import authRoutes from './routes/authRoutes';
+import taskRoutes from './routes/taskRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +53,9 @@ app.get('/api', (_req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Task routes
+app.use('/api/tasks', taskRoutes);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {

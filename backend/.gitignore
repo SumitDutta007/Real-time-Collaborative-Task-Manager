@@ -30,5 +30,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Prisma
-prisma/migrations/
+# Prisma - Keep migrations, ignore dev.db
+*.db
+*.db-journal

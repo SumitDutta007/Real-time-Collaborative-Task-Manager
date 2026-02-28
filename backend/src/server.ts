@@ -9,6 +9,7 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import authRoutes from './routes/authRoutes';
 import taskRoutes from './routes/taskRoutes';
 import projectRoutes from './routes/projectRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import { setupSocketHandlers } from './socket/socketHandler';
 
 // Load environment variables
@@ -61,6 +62,9 @@ app.use('/api/projects', projectRoutes);
 
 // Task routes
 app.use('/api/tasks', taskRoutes);
+
+// Analytics routes
+app.use('/api/analytics', analyticsRoutes);
 
 // Setup Socket.io handlers
 setupSocketHandlers(io);

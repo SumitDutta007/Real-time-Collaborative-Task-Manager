@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { taskService } from '../services/taskService';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { emitTaskEvent, emitToUser } from '../socket/socketHandler';
 
 enum Status {
   PENDING = 'PENDING',
@@ -44,6 +45,17 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       pendingAssigneeEmail: assigneeEmail,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
+
+    // Emit WebSocket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      emitTaskEvent(io, 'task:created', { task });
+      
+      // Notify assignee if task is assigned
+      if (task.assigneeId) {
+        emitToUser(io, task.assigneeId, 'task:assigned', { task });
+      }
+    }
 
     return res.status(201).json({
       status: 'success',
@@ -151,6 +163,17 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Emit WebSocket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      emitTaskEvent(io, 'task:updated', { task });
+      
+      // Notify assignee if task has one
+      if (task.assigneeId && task.assigneeId !== userId) {
+        emitToUser(io, task.assigneeId, 'task:updated:assigned', { task });
+      }
+    }
+
     return res.status(200).json({
       status: 'success',
       data: { task },
@@ -183,6 +206,17 @@ export const deleteTask = async (req: AuthRequest, res: Response) => {
         status: 'error',
         message: 'Task not found or you are not the creator',
       });
+    }
+
+    // Emit WebSocket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      emitTaskEvent(io, 'task:deleted', { taskId: id, task });
+      
+      // Notify assignee if task had one
+      if (task.assigneeId && task.assigneeId !== userId) {
+        emitToUser(io, task.assigneeId, 'task:deleted:assigned', { taskId: id, task });
+      }
     }
 
     return res.status(200).json({
@@ -227,6 +261,17 @@ export const assignTask = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Emit WebSocket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      emitTaskEvent(io, 'task:assigned', { task });
+      
+      // Notify the assignee
+      if (task.assigneeId) {
+        emitToUser(io, task.assigneeId, 'task:assigned:you', { task });
+      }
+    }
+
     return res.status(200).json({
       status: 'success',
       data: { task },
@@ -267,6 +312,17 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response) => {
         status: 'error',
         message: 'Task not found or access denied',
       });
+    }
+
+    // Emit WebSocket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      emitTaskEvent(io, 'task:status:updated', { task });
+      
+      // Notify creator if status updated by assignee
+      if (task.creatorId && task.creatorId !== userId) {
+        emitToUser(io, task.creatorId, 'task:status:updated:creator', { task });
+      }
     }
 
     return res.status(200).json({

@@ -182,9 +182,12 @@ export class TaskService {
       return null;
     }
 
+    // Get user email to check pending assignee
+    const userEmail = await this.getUserEmail(userId);
+
     // Creators can update everything, assignees can only update status and progress
     const isCreator = task.creatorId === userId;
-    const isAssignee = task.assigneeId === userId;
+    const isAssignee = task.assigneeId === userId || task.pendingAssigneeEmail === userEmail;
 
     if (!isCreator && !isAssignee) {
       return null;

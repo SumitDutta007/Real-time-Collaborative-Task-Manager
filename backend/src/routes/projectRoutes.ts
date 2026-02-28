@@ -5,15 +5,11 @@ import { authMiddleware, AuthRequest } from "../middleware/authMiddleware";
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get all projects for the authenticated user
-router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
+// Get all projects (visible to all authenticated users)
+router.get("/", authMiddleware, async (_req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
-
+    // Show all projects to all users for collaboration
     const projects = await prisma.project.findMany({
-      where: {
-        creatorId: userId,
-      },
       include: {
         creator: {
           select: {
@@ -42,16 +38,14 @@ router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Get single project with tasks
+// Get single project with tasks (accessible to all authenticated users)
 router.get("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
 
     const project = await prisma.project.findFirst({
       where: {
         id,
-        creatorId: userId,
       },
       include: {
         creator: {

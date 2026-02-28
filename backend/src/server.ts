@@ -9,6 +9,7 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import authRoutes from './routes/authRoutes';
 import taskRoutes from './routes/taskRoutes';
 import projectRoutes from './routes/projectRoutes';
+import { setupSocketHandlers } from './socket/socketHandler';
 
 // Load environment variables
 dotenv.config();
@@ -21,7 +22,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   },
 });
@@ -61,14 +62,8 @@ app.use('/api/projects', projectRoutes);
 // Task routes
 app.use('/api/tasks', taskRoutes);
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
+// Setup Socket.io handlers
+setupSocketHandlers(io);
 
 // Make io accessible in routes
 app.set('io', io);

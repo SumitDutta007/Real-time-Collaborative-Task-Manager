@@ -11,6 +11,7 @@ import { connectSocket, disconnectSocket } from "@/lib/socket";
 import { syncBackendToken } from "@/lib/syncToken";
 import CreateTaskModal from "@/components/CreateTaskModal";
 import CreateProjectModal from "@/components/CreateProjectModal";
+import EditTaskModal from "@/components/EditTaskModal";
 import Sidebar from "@/components/Sidebar";
 
 const priorityDot: Record<string, string> = {
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<"all" | "PENDING" | "COMPLETED">("all");
   const [taskFilter, setTaskFilter] = useState<"all" | "assigned" | "created">("all");
   const [selectedProjectId, setSelectedProjectId] = useState<string | "all">("all");
@@ -140,6 +142,10 @@ export default function DashboardPage() {
   const handleDelete = async (taskId: string) => {
     await taskApi.delete(taskId);
     setTasks((p) => p.filter((t) => t.id !== taskId));
+  };
+
+  const handleUpdate = (updated: Task) => {
+    setTasks((p) => p.map((t) => t.id === updated.id ? updated : t));
   };
 
   if (status === "loading") return (
@@ -504,15 +510,27 @@ export default function DashboardPage() {
                                     <span className="text-gray-300 text-xs">—</span>
                                   )}
                                 </div>
-                                {/* Delete */}
-                                <button
-                                  onClick={() => handleDelete(task.id)}
-                                  className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all p-1 rounded"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
+                                {/* Actions */}
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => setEditingTask(task)}
+                                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 transition-all p-1 rounded"
+                                    title="Edit task"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(task.id)}
+                                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-all p-1 rounded"
+                                    title="Delete task"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </motion.div>
                             ))}
                           </div>
@@ -553,14 +571,26 @@ export default function DashboardPage() {
                                     <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{task.description}</p>
                                   )}
                                 </div>
-                                <button
-                                  onClick={() => handleDelete(task.id)}
-                                  className="text-gray-300 hover:text-red-400 transition-colors p-1 shrink-0"
-                                >
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => setEditingTask(task)}
+                                    className="text-gray-300 hover:text-blue-500 transition-colors p-1"
+                                    title="Edit"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(task.id)}
+                                    className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                                    title="Delete"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </div>
                               <div className="flex flex-wrap gap-2 mb-3">
                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[task.status]}`}>
@@ -669,6 +699,18 @@ export default function DashboardPage() {
             // Do NOT add task to state here — the socket's task:created event
             // is the single source of truth and will add it automatically.
             setShowCreateModal(false);
+          }}
+        />
+      )}
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          currentUserEmail={session.user?.email ?? ""}
+          onClose={() => setEditingTask(null)}
+          onUpdated={(updated) => {
+            handleUpdate(updated);
+            setEditingTask(null);
           }}
         />
       )}

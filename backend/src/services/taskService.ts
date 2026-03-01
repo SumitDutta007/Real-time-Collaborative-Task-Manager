@@ -70,7 +70,7 @@ export class TaskService {
   }
 
   // Get all tasks (with optional filtering)
-  async getTasks(userId: string, filter?: 'created' | 'assigned' | 'all') {
+  async getTasks(userId: string, filter?: 'created' | 'assigned' | 'all' | 'team') {
     const where: any = {};
 
     if (filter === 'created') {
@@ -80,8 +80,11 @@ export class TaskService {
         { assigneeId: userId },
         { pendingAssigneeEmail: await this.getUserEmail(userId) },
       ];
+    } else if (filter === 'team') {
+      // Shared board: return every task across all projects (no user restriction)
+      // where stays empty → no WHERE clause → all tasks
     } else {
-      // 'all' - tasks created by or assigned to user
+      // 'all' - tasks created by or assigned to user (personal view)
       where.OR = [
         { creatorId: userId },
         { assigneeId: userId },

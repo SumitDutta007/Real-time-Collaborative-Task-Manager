@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
 export default api;
 
 export const taskApi = {
-  getAll: (filter?: "created" | "assigned" | "all") =>
+  getAll: (filter?: "created" | "assigned" | "all" | "team") =>
     api.get("/api/tasks", { params: { filter } }),
   getById: (id: string) => api.get(`/api/tasks/${id}`),
   create: (data: object) => api.post("/api/tasks", data),

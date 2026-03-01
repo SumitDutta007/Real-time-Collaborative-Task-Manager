@@ -9,12 +9,16 @@ interface CreateTaskModalProps {
   onClose: () => void;
   onCreated: (task: Task) => void;
   projects: Project[];
+  defaultProjectId?: string;
+  onCreateProject?: () => void;
 }
 
 export default function CreateTaskModal({
   onClose,
   onCreated,
   projects,
+  defaultProjectId,
+  onCreateProject,
 }: CreateTaskModalProps) {
   const [form, setForm] = useState<CreateTaskInput>({
     title: "",
@@ -22,7 +26,7 @@ export default function CreateTaskModal({
     priority: "NORMAL",
     dueDate: "",
     assigneeEmail: "",
-    projectId: projects[0]?.id || "",
+    projectId: defaultProjectId || projects[0]?.id || "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -76,13 +80,25 @@ export default function CreateTaskModal({
 
         {projects.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p className="text-sm">You need to create a project before adding tasks.</p>
-            <button
-              onClick={onClose}
-              className="mt-4 text-blue-600 text-sm hover:underline"
-            >
-              Close
-            </button>
+            <div className="text-3xl mb-3">⊞</div>
+            <p className="text-sm font-medium text-gray-700 mb-1">No projects yet</p>
+            <p className="text-xs text-gray-400 mb-5">Create a project first, then add tasks to it.</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              {onCreateProject && (
+                <button
+                  onClick={() => { onClose(); onCreateProject(); }}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                >
+                  Create Project
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,7 +109,7 @@ export default function CreateTaskModal({
               <select
                 value={form.projectId}
                 onChange={(e) => setForm({ ...form, projectId: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 {projects.map((p) => (
@@ -113,7 +129,7 @@ export default function CreateTaskModal({
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Enter task title..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -127,7 +143,7 @@ export default function CreateTaskModal({
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Optional description..."
                 rows={3}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
@@ -144,7 +160,7 @@ export default function CreateTaskModal({
                       priority: e.target.value as "LOW" | "NORMAL" | "HIGH",
                     })
                   }
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="LOW">Low</option>
                   <option value="NORMAL">Normal</option>
@@ -160,7 +176,7 @@ export default function CreateTaskModal({
                   type="date"
                   value={form.dueDate}
                   onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -176,7 +192,7 @@ export default function CreateTaskModal({
                   setForm({ ...form, assigneeEmail: e.target.value })
                 }
                 placeholder="colleague@example.com"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 

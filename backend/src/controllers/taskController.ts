@@ -73,7 +73,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 export const getTasks = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const filter = req.query.filter as 'created' | 'assigned' | 'all' | undefined;
+    const filter = req.query.filter as 'created' | 'assigned' | 'all' | 'team' | undefined;
 
     if (!userId) {
       return res.status(401).json({
@@ -82,7 +82,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const tasks = await taskService.getTasks(userId, filter || 'all');
+    const tasks = await taskService.getTasks(userId, filter ?? 'team');
 
     return res.status(200).json({
       status: 'success',

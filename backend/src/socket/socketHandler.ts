@@ -13,8 +13,23 @@ interface JwtPayload {
   name: string;
 }
 
-// Store connected users
-const connectedUsers = new Map<string, { socketId: string; email: string; name: string }>();
+// Store connected sockets: socketId → user info
+// Keyed by socketId so multiple tabs of the same user are tracked separately.
+// Use getOnlineUsers() to get a deduplicated list by userId for broadcasting.
+const connectedSockets = new Map<string, { userId: string; email: string; name: string }>();
+
+/** Returns one entry per unique userId (deduplicates multi-tab users). */
+function getOnlineUsers(): { email: string; name: string }[] {
+  const seen = new Set<string>();
+  const result: { email: string; name: string }[] = [];
+  for (const u of connectedSockets.values()) {
+    if (!seen.has(u.userId)) {
+      seen.add(u.userId);
+      result.push({ email: u.email, name: u.name });
+    }
+  }
+  return result;
+}
 
 export const setupSocketHandlers = (io: Server) => {
   // Socket authentication middleware
@@ -39,21 +54,19 @@ export const setupSocketHandlers = (io: Server) => {
   io.on('connection', (socket: AuthenticatedSocket) => {
     console.log(`✅ User connected: ${socket.userName} (${socket.userEmail}) [Socket ID: ${socket.id}]`);
 
-    // Add user to connected users
+    // Track this socket connection (keyed by socketId, not userId)
     if (socket.userId) {
-      connectedUsers.set(socket.userId, {
-        socketId: socket.id,
+      connectedSockets.set(socket.id, {
+        userId: socket.userId,
         email: socket.userEmail || '',
         name: socket.userName || '',
       });
 
-      console.log(`👥 Total connected users: ${connectedUsers.size}`);
+      const online = getOnlineUsers();
+      console.log(`👥 Total connected sockets: ${connectedSockets.size} | Unique users: ${online.length}`);
 
-      // Broadcast updated online users list
-      io.emit('users:online', Array.from(connectedUsers.values()).map(u => ({
-        email: u.email,
-        name: u.name,
-      })));
+      // Broadcast deduplicated online users list
+      io.emit('users:online', online);
     }
 
     // Join user's personal room for targeted notifications
@@ -66,20 +79,22 @@ export const setupSocketHandlers = (io: Server) => {
       socket.broadcast.emit('task:typing', data);
     });
 
+    // Handle request for current online users (client asks on mount to get accurate count)
+    socket.on('users:request', () => {
+      socket.emit('users:online', getOnlineUsers());
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log(`❌ User disconnected: ${socket.userName} [Socket ID: ${socket.id}]`);
-      
-      if (socket.userId) {
-        connectedUsers.delete(socket.userId);
-        console.log(`👥 Total connected users: ${connectedUsers.size}`);
-        
-        // Broadcast updated online users list
-        io.emit('users:online', Array.from(connectedUsers.values()).map(u => ({
-          email: u.email,
-          name: u.name,
-        })));
-      }
+
+      connectedSockets.delete(socket.id);
+
+      const online = getOnlineUsers();
+      console.log(`👥 Total connected sockets: ${connectedSockets.size} | Unique users: ${online.length}`);
+
+      // Broadcast deduplicated online users list
+      io.emit('users:online', online);
     });
   });
 };
@@ -96,12 +111,12 @@ export const emitToUser = (io: Server, userId: string, event: string, data: any)
   io.to(`user:${userId}`).emit(event, data);
 };
 
-// Get connected users count
+// Get connected unique users count
 export const getConnectedUsersCount = (): number => {
-  return connectedUsers.size;
+  return getOnlineUsers().length;
 };
 
-// Get connected users
+// Get connected unique users
 export const getConnectedUsers = () => {
-  return Array.from(connectedUsers.values());
+  return getOnlineUsers();
 };

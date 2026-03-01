@@ -14,6 +14,10 @@ interface SidebarProps {
   tasks?: Task[];
   onProjectFilter?: (id: string | "all") => void;
   activeProjectId?: string | "all";
+  onTaskFilter?: (f: "all" | "assigned" | "created") => void;
+  activeTaskFilter?: "all" | "assigned" | "created";
+  onStatusFilter?: (s: "all" | "PENDING" | "COMPLETED") => void;
+  activeStatusFilter?: "all" | "PENDING" | "COMPLETED";
 }
 
 const navLinks = [
@@ -28,6 +32,10 @@ export default function Sidebar({
   tasks = [],
   onProjectFilter,
   activeProjectId = "all",
+  onTaskFilter,
+  activeTaskFilter = "all",
+  onStatusFilter,
+  activeStatusFilter = "all",
 }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -115,25 +123,68 @@ export default function Sidebar({
               My Tasks
             </p>
             <div className="space-y-1">
+              {/* Owner filters */}
               {[
-                { label: "Assigned to me", count: assignedToMe, icon: "👤" },
-                { label: "Created by me", count: createdByMe, icon: "✏️" },
-                { label: "Pending", count: pending, icon: "⏳" },
-                { label: "Completed", count: completed, icon: "✅" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </div>
-                  <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full font-medium">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
+                { label: "Assigned to me", count: assignedToMe, icon: "👤", key: "assigned" as const },
+                { label: "Created by me", count: createdByMe, icon: "✏️", key: "created" as const },
+              ].map((item) => {
+                const isActive = activeTaskFilter === item.key;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      onTaskFilter?.(isActive ? "all" : item.key);
+                      setMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? "bg-green-500/20 text-green-400"
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      isActive ? "bg-green-500/30 text-green-300" : "bg-gray-700 text-gray-300"
+                    }`}>
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
+              {/* Status filters */}
+              {[
+                { label: "Pending", count: pending, icon: "⏳", key: "PENDING" as const },
+                { label: "Completed", count: completed, icon: "✅", key: "COMPLETED" as const },
+              ].map((item) => {
+                const isActive = activeStatusFilter === item.key;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      onStatusFilter?.(isActive ? "all" : item.key);
+                      setMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? "bg-blue-500/20 text-blue-400"
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      isActive ? "bg-blue-500/30 text-blue-300" : "bg-gray-700 text-gray-300"
+                    }`}>
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

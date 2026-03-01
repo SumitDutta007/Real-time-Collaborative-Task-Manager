@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [filter, setFilter] = useState<"all" | "PENDING" | "COMPLETED">("all");
+  const [taskFilter, setTaskFilter] = useState<"all" | "assigned" | "created">("all");
   const [selectedProjectId, setSelectedProjectId] = useState<string | "all">("all");
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<{ email: string; name: string }[]>([]);
@@ -148,10 +149,16 @@ export default function DashboardPage() {
   );
   if (!session) return null;
 
+  const myEmail = session.user?.email;
   const filteredTasks = tasks.filter((t) => {
     const statusMatch = filter === "all" || t.status === filter;
     const projectMatch = selectedProjectId === "all" || t.projectId === selectedProjectId;
-    return statusMatch && projectMatch;
+    const taskMatch =
+      taskFilter === "all" ||
+      (taskFilter === "assigned" &&
+        (t.assignee?.email === myEmail || t.pendingAssigneeEmail === myEmail)) ||
+      (taskFilter === "created" && t.creator?.email === myEmail);
+    return statusMatch && projectMatch && taskMatch;
   });
 
   // Group ALL projects — filter to selected project when one is chosen
@@ -192,6 +199,10 @@ export default function DashboardPage() {
         tasks={tasks}
         onProjectFilter={(id) => setSelectedProjectId(id)}
         activeProjectId={selectedProjectId}
+        onTaskFilter={(f) => { setTaskFilter(f); }}
+        activeTaskFilter={taskFilter}
+        onStatusFilter={(s) => { setFilter(s); setTaskFilter("all"); }}
+        activeStatusFilter={filter}
       />
 
       {/* ── Main ── */}

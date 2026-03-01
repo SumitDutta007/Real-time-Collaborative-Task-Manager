@@ -21,14 +21,16 @@ api.interceptors.request.use((config) => {
 export default api;
 
 export const taskApi = {
-  getAll: () => api.get("/api/tasks"),
+  getAll: (filter?: "created" | "assigned" | "all") =>
+    api.get("/api/tasks", { params: { filter } }),
   getById: (id: string) => api.get(`/api/tasks/${id}`),
   create: (data: object) => api.post("/api/tasks", data),
-  update: (id: string, data: object) => api.patch(`/api/tasks/${id}`, data),
+  update: (id: string, data: object) => api.put(`/api/tasks/${id}`, data),
   delete: (id: string) => api.delete(`/api/tasks/${id}`),
-  complete: (id: string) => api.patch(`/api/tasks/${id}/complete`),
-  updateProgress: (id: string, progress: number) =>
-    api.patch(`/api/tasks/${id}/progress`, { progress }),
+  updateStatus: (id: string, status: "PENDING" | "COMPLETED") =>
+    api.patch(`/api/tasks/${id}/status`, { status }),
+  assign: (id: string, data: { assigneeEmail?: string; assigneeId?: string }) =>
+    api.patch(`/api/tasks/${id}/assign`, data),
 };
 
 export const projectApi = {
@@ -37,12 +39,25 @@ export const projectApi = {
   create: (data: object) => api.post("/api/projects", data),
   update: (id: string, data: object) => api.put(`/api/projects/${id}`, data),
   delete: (id: string) => api.delete(`/api/projects/${id}`),
+  toggleFavorite: (id: string) => api.patch(`/api/projects/${id}/favorite`),
+};
+
+export const analyticsApi = {
+  getStats: () => api.get("/api/analytics/stats"),
+  getTasksByStatus: () => api.get("/api/analytics/tasks/by-status"),
+  getTasksByPriority: () => api.get("/api/analytics/tasks/by-priority"),
+  getTasksByProject: () => api.get("/api/analytics/tasks/by-project"),
+  getCompletionTrend: (days?: number) =>
+    api.get("/api/analytics/trends/completion", { params: { days } }),
+  getRecentActivity: (limit?: number) =>
+    api.get("/api/analytics/activity/recent", { params: { limit } }),
+  getUserStats: () => api.get("/api/analytics/users/stats"),
+  getProjectAnalytics: (projectId: string) =>
+    api.get(`/api/analytics/projects/${projectId}`),
 };
 
 export const authApi = {
-  login: (data: { email: string; password?: string; googleToken?: string }) =>
-    api.post("/api/auth/login", data),
-  register: (data: { name: string; email: string; password?: string }) =>
-    api.post("/api/auth/register", data),
-  me: () => api.get("/api/auth/me"),
+  syncUser: (data: { email: string; name: string; image?: string | null }) =>
+    api.post("/api/auth/sync", data),
+  verifyToken: () => api.get("/api/auth/verify"),
 };

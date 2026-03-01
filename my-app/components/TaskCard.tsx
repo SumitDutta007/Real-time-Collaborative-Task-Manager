@@ -11,7 +11,7 @@ interface TaskCardProps {
 
 const priorityColors = {
   LOW: "bg-green-100 text-green-700",
-  MEDIUM: "bg-yellow-100 text-yellow-700",
+  NORMAL: "bg-yellow-100 text-yellow-700",
   HIGH: "bg-red-100 text-red-700",
 };
 
@@ -22,7 +22,7 @@ export default function TaskCard({ task, onComplete, onDelete }: TaskCardProps) 
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md ${
-        task.completed ? "opacity-70" : ""
+        task.status === "COMPLETED" ? "opacity-70" : ""
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -30,12 +30,12 @@ export default function TaskCard({ task, onComplete, onDelete }: TaskCardProps) 
           <button
             onClick={() => onComplete(task.id)}
             className={`mt-1 w-5 h-5 rounded-full border-2 flex-shrink-0 transition-colors ${
-              task.completed
+              task.status === "COMPLETED"
                 ? "bg-green-500 border-green-500"
                 : "border-gray-300 hover:border-green-400"
             }`}
           >
-            {task.completed && (
+            {task.status === "COMPLETED" && (
               <svg className="w-full h-full text-white p-0.5" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
@@ -49,7 +49,7 @@ export default function TaskCard({ task, onComplete, onDelete }: TaskCardProps) 
           <div className="flex-1 min-w-0">
             <h3
               className={`font-semibold text-gray-800 ${
-                task.completed ? "line-through text-gray-400" : ""
+                task.status === "COMPLETED" ? "line-through text-gray-400" : ""
               }`}
             >
               {task.title}
@@ -69,15 +69,15 @@ export default function TaskCard({ task, onComplete, onDelete }: TaskCardProps) 
                 {task.priority}
               </span>
 
-              {task.assignedTo && (
+              {task.assignee && (
                 <span className="text-xs text-gray-400">
-                  Assigned to: {task.assignedTo.name || task.assignedToEmail}
+                  Assigned to: {task.assignee.name || task.pendingAssigneeEmail}
                 </span>
               )}
 
-              {task.assignedToEmail && !task.assignedTo && (
+              {task.pendingAssigneeEmail && !task.assignee && (
                 <span className="text-xs text-orange-400">
-                  Pending: {task.assignedToEmail}
+                  Pending: {task.pendingAssigneeEmail}
                 </span>
               )}
 

@@ -1,39 +1,54 @@
 export interface User {
   id: string;
-  name: string | null;
+  name: string;
   email: string;
-  image: string | null;
+  image?: string | null;
 }
 
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
-  completed: boolean;
-  priority: "LOW" | "MEDIUM" | "HIGH";
+  status: "PENDING" | "COMPLETED";
+  priority: "LOW" | "NORMAL" | "HIGH";
   progress: number;
+  projectId: string;
+  creatorId: string;
+  assigneeId?: string | null;
+  pendingAssigneeEmail?: string | null;
   dueDate?: string | null;
   createdAt: string;
   updatedAt: string;
-  assignedToEmail?: string | null;
-  assignedTo?: User | null;
-  createdBy: User;
-  projectId?: string | null;
+  creator: User;
+  assignee?: User | null;
+  project?: {
+    id: string;
+    name: string;
+    color: string;
+  };
 }
 
 export interface Project {
   id: string;
   name: string;
   description?: string | null;
+  color: string;
+  favorite: boolean;
+  creatorId: string;
   createdAt: string;
-  tasks: Task[];
+  updatedAt: string;
+  creator?: User;
+  tasks?: Task[];
+  _count?: {
+    tasks: number;
+  };
 }
 
 export interface CreateTaskInput {
   title: string;
   description?: string;
-  priority?: "LOW" | "MEDIUM" | "HIGH";
+  priority?: "LOW" | "NORMAL" | "HIGH";
   dueDate?: string;
-  assignedToEmail?: string;
-  projectId?: string;
+  assigneeEmail?: string;
+  projectId: string;
 }

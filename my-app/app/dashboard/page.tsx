@@ -4,8 +4,8 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Task } from "@/types";
-import { taskApi } from "@/lib/api";
+import { Task, Project } from "@/types";
+import { taskApi, projectApi, authApi } from "@/lib/api";
 import { connectSocket, disconnectSocket } from "@/lib/socket";
 import Header from "@/components/Header";
 import TaskCard from "@/components/TaskCard";
@@ -15,16 +15,46 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [tokenReady, setTokenReady] = useState(false);
 
-  const fetchTasks = useCallback(async () => {
+  // Sync user with backend to get JWT token
+  const syncBackendToken = useCallback(async () => {
+    if (!session?.user) return;
+    const existingToken = localStorage.getItem("token");
+    if (existingToken) {
+      setTokenReady(true);
+      return;
+    }
     try {
-      const response = await taskApi.getAll();
-      setTasks(response.data.tasks || response.data);
+      const response = await authApi.syncUser({
+        email: session.user.email!,
+        name: session.user.name!,
+        image: session.user.image,
+      });
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+      setTokenReady(true);
     } catch (error) {
-      console.error("Failed to fetch tasks:", error);
+      console.error("Failed to sync user with backend:", error);
+      setTokenReady(true);
+    }
+  }, [session]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [tasksRes, projectsRes] = await Promise.all([
+        taskApi.getAll(),
+        projectApi.getAll(),
+      ]);
+      setTasks(tasksRes.data.data.tasks);
+      setProjects(projectsRes.data);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
     } finally {
       setLoading(false);
     }
@@ -38,26 +68,36 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (session) {
-      fetchTasks();
+      syncBackendToken();
+    }
+  }, [session, syncBackendToken]);
 
-      // Set up real-time updates
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  useEffect(() => {
+    if (session && tokenReady) {
+      fetchData();
+
+      const token = localStorage.getItem("token");
       if (token) {
         const socket = connectSocket(token);
 
-        socket.on("task:created", (task: Task) => {
-          setTasks((prev) => [task, ...prev]);
+        socket.on("task:created", (data: { task: Task }) => {
+          setTasks((prev) => [data.task, ...prev]);
         });
 
-        socket.on("task:updated", (updatedTask: Task) => {
+        socket.on("task:updated", (data: { task: Task }) => {
           setTasks((prev) =>
-            prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+            prev.map((t) => (t.id === data.task.id ? data.task : t))
           );
         });
 
-        socket.on("task:deleted", (taskId: string) => {
-          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        socket.on("task:deleted", (data: { taskId: string }) => {
+          setTasks((prev) => prev.filter((t) => t.id !== data.taskId));
+        });
+
+        socket.on("task:status:updated", (data: { task: Task }) => {
+          setTasks((prev) =>
+            prev.map((t) => (t.id === data.task.id ? data.task : t))
+          );
         });
 
         return () => {
@@ -65,24 +105,25 @@ export default function DashboardPage() {
         };
       }
     }
-  }, [session, fetchTasks]);
+  }, [session, tokenReady, fetchData]);
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === "pending") return !task.completed;
-    if (filter === "completed") return task.completed;
+    if (filter === "pending") return task.status === "PENDING";
+    if (filter === "completed") return task.status === "COMPLETED";
     return true;
   });
 
-  const handleTaskComplete = async (taskId: string) => {
+  const handleTaskStatusToggle = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const newStatus = task.status === "COMPLETED" ? "PENDING" : "COMPLETED";
     try {
-      await taskApi.complete(taskId);
+      await taskApi.updateStatus(taskId, newStatus);
       setTasks((prev) =>
-        prev.map((t) =>
-          t.id === taskId ? { ...t, completed: !t.completed } : t
-        )
+        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
       );
     } catch (error) {
-      console.error("Failed to toggle task:", error);
+      console.error("Failed to toggle task status:", error);
     }
   };
 
@@ -120,12 +161,12 @@ export default function DashboardPage() {
             },
             {
               label: "Pending",
-              value: tasks.filter((t) => !t.completed).length,
+              value: tasks.filter((t) => t.status === "PENDING").length,
               borderClass: "border-yellow-500",
             },
             {
               label: "Completed",
-              value: tasks.filter((t) => t.completed).length,
+              value: tasks.filter((t) => t.status === "COMPLETED").length,
               borderClass: "border-green-500",
             },
           ].map((stat) => (
@@ -192,7 +233,7 @@ export default function DashboardPage() {
                 <TaskCard
                   key={task.id}
                   task={task}
-                  onComplete={handleTaskComplete}
+                  onComplete={handleTaskStatusToggle}
                   onDelete={handleTaskDelete}
                 />
               ))}
@@ -203,6 +244,7 @@ export default function DashboardPage() {
 
       {showCreateModal && (
         <CreateTaskModal
+          projects={projects}
           onClose={() => setShowCreateModal(false)}
           onCreated={(newTask) => {
             setTasks((prev) => [newTask, ...prev]);

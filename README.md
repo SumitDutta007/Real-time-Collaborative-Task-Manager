@@ -6,8 +6,8 @@ A premium, full-stack, real-time collaborative task management app with Google a
 
 ## 🚀 Live Demo
 
-- **Frontend:** [https://your-app.vercel.app](https://your-app.vercel.app)
-- **Backend API:** [https://your-backend.onrender.com](https://your-backend.onrender.com)
+- **Frontend:** [https://real-time-collaborative-task-manage.vercel.app](https://real-time-collaborative-task-manage.vercel.app)
+- **Backend API:** [https://real-time-collaborative-task-manager.onrender.com](https://real-time-collaborative-task-manager.onrender.com)
 
 ---
 
